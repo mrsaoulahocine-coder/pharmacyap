@@ -46,7 +46,7 @@ export function EditDebtModal({ debt, onClose, onSubmit }: EditDebtModalProps) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <DollarSign className="w-4 h-4 inline ml-1" />
-              المبلغ (ريال سعودي) *
+              المبلغ (دينار جزائري) *
             </label>
             <input
               type="number"

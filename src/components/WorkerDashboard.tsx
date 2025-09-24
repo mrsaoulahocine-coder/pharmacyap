@@ -89,11 +89,11 @@ export function WorkerDashboard({
   );
 
   const formatCurrency = (amount: number) => {
-    return `${amount.toFixed(2)} ر.س`;
+    return `${amount.toFixed(2)} DA`;
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ar-SA');
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -107,7 +107,7 @@ export function WorkerDashboard({
                 مرحباً، {workerData.currentUser.full_name}
               </h1>
               <p className="text-gray-600 mt-1">
-                {new Date().toLocaleDateString('ar-SA', { 
+                {new Date().toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 
                   month: 'long', 
@@ -359,7 +359,7 @@ export function WorkerDashboard({
                             <div>
                               <p className="font-medium text-gray-900">{customer?.full_name}</p>
                               <p className="text-sm text-gray-600">{debt.note}</p>
-                              <p className="text-xs text-gray-500">{new Date(debt.created_at).toLocaleTimeString('ar-SA')}</p>
+                              <p className="text-xs text-gray-500">{new Date(debt.created_at).toLocaleTimeString()}</p>
                             </div>
                             <span className="font-semibold text-red-600">{formatCurrency(debt.debt_amount)}</span>
                           </div>
@@ -386,7 +386,7 @@ export function WorkerDashboard({
                             <div>
                               <p className="font-medium text-gray-900">{customer?.full_name}</p>
                               <p className="text-sm text-gray-600">{payment.note}</p>
-                              <p className="text-xs text-gray-500">{new Date(payment.paid_at).toLocaleTimeString('ar-SA')}</p>
+                              <p className="text-xs text-gray-500">{new Date(payment.paid_at).toLocaleTimeString()}</p>
                             </div>
                             <span className="font-semibold text-green-600">{formatCurrency(payment.amount)}</span>
                           </div>

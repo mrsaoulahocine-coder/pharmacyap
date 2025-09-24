@@ -93,12 +93,12 @@ export function CustomerSelectionModal({
                   <div className="text-right">
                     {customer.promise_to_pay_date && (
                       <p className="text-xs text-gray-500">
-                        موعد الدفع: {new Date(customer.promise_to_pay_date).toLocaleDateString('ar-SA')}
+                        موعد الدفع: {new Date(customer.promise_to_pay_date).toLocaleDateString()}
                       </p>
                     )}
                     <div className="mt-1">
                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                        مسجل منذ: {new Date(customer.date_registered).toLocaleDateString('ar-SA')}
+                        مسجل منذ: {new Date(customer.date_registered).toLocaleDateString()}
                       </span>
                     </div>
                   </div>

@@ -49,15 +49,15 @@ export function CustomerProfile({
   const outstanding = totalDebt - totalPaid;
 
   const formatCurrency = (amount: number) => {
-    return `${amount.toFixed(2)} ر.س`;
+    return `${amount.toFixed(2)} DA`;
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ar-SA');
+    return new Date(dateString).toLocaleDateString();
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ar-SA');
+    return new Date(dateString).toLocaleString();
   };
 
   return (

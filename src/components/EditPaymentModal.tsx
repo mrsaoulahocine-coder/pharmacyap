@@ -46,7 +46,7 @@ export function EditPaymentModal({ payment, onClose, onSubmit }: EditPaymentModa
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <DollarSign className="w-4 h-4 inline ml-1" />
-              المبلغ المدفوع (ريال سعودي) *
+              المبلغ المدفوع (دينار جزائري) *
             </label>
             <input
               type="number"
