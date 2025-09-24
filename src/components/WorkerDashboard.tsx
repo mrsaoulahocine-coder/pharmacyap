@@ -10,7 +10,9 @@ import {
   Bell,
   ChevronRight,
   Phone,
-  Calendar
+  Calendar,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Customer, Debt, Payment, WorkerData } from '../types';
 
@@ -37,6 +39,7 @@ export function WorkerDashboard({
 }: WorkerDashboardProps) {
   const [topCustomersCount, setTopCustomersCount] = useState(3);
   const [notificationDay, setNotificationDay] = useState(0); // 0 = today, 1 = tomorrow, etc.
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   // Calculate worker's statistics
   const myDebts = debts.filter(d => d.created_by_user_id === workerData.currentUser.id);
@@ -56,6 +59,43 @@ export function WorkerDashboard({
     return customerOutstanding > 0;
   });
 
+  // Get customers with their debt amounts
+  const customersWithDebtAmounts = customers.map(customer => {
+    const customerDebts = myDebts.filter(d => d.customer_id === customer.id);
+    const totalDebt = customerDebts.reduce((sum, d) => sum + d.debt_amount, 0);
+    return {
+      customer,
+      amount: totalDebt,
+      debts: customerDebts
+    };
+  }).filter(c => c.amount > 0);
+
+  // Get customers with their payment amounts
+  const customersWithPaymentAmounts = customers.map(customer => {
+    const customerPayments = myPayments.filter(p => p.customer_id === customer.id);
+    const totalPaid = customerPayments.reduce((sum, p) => sum + p.amount, 0);
+    return {
+      customer,
+      amount: totalPaid,
+      payments: customerPayments
+    };
+  }).filter(c => c.amount > 0);
+
+  // Get customers with outstanding amounts
+  const customersWithOutstandingAmounts = customers.map(customer => {
+    const customerDebts = myDebts.filter(d => d.customer_id === customer.id);
+    const customerPayments = myPayments.filter(p => p.customer_id === customer.id);
+    const customerOutstanding = 
+      customerDebts.reduce((sum, d) => sum + d.debt_amount, 0) - 
+      customerPayments.reduce((sum, p) => sum + p.amount, 0);
+    
+    return {
+      customer,
+      amount: customerOutstanding,
+      debts: customerDebts,
+      payments: customerPayments
+    };
+  }).filter(c => c.amount > 0);
   // Get customers with outstanding amounts for ranking
   const customersWithOutstanding = customers.map(customer => {
     const customerDebts = myDebts.filter(d => d.customer_id === customer.id);
@@ -96,6 +136,9 @@ export function WorkerDashboard({
     return new Date(dateString).toLocaleDateString();
   };
 
+  const toggleCard = (cardId: string) => {
+    setExpandedCard(expandedCard === cardId ? null : cardId);
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -128,58 +171,185 @@ export function WorkerDashboard({
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Quick Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">عملائي</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{customersWithDebt.length}</p>
-                <p className="text-xs text-gray-500 mt-1">عملاء لديهم ديون</p>
-              </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Users className="w-6 h-6 text-blue-600" />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div 
+              className="p-6 cursor-pointer"
+              onClick={() => toggleCard('customers')}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">عملائي</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{customersWithDebt.length}</p>
+                  <p className="text-xs text-gray-500 mt-1">عملاء لديهم ديون</p>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <Users className="w-6 h-6 text-blue-600" />
+                  </div>
+                  {expandedCard === 'customers' ? 
+                    <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  }
+                </div>
               </div>
             </div>
+            {expandedCard === 'customers' && (
+              <div className="border-t border-gray-200 p-4 max-h-64 overflow-y-auto">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">العملاء الذين لديهم ديون:</h4>
+                <div className="space-y-2">
+                  {customersWithDebt.map(customer => {
+                    const customerOutstanding = customersWithOutstandingAmounts.find(c => c.customer.id === customer.id)?.amount || 0;
+                    return (
+                      <div 
+                        key={customer.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCustomerSelect(customer);
+                        }}
+                        className="flex items-center justify-between p-2 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
+                      >
+                        <span className="text-sm font-medium text-gray-900">{customer.full_name}</span>
+                        <span className="text-sm text-orange-600 font-semibold">{formatCurrency(customerOutstanding)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">إجمالي الديون</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalDebts)}</p>
-                <p className="text-xs text-gray-500 mt-1">الديون التي أنشأتها</p>
-              </div>
-              <div className="p-3 bg-red-100 rounded-lg">
-                <CreditCard className="w-6 h-6 text-red-600" />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div 
+              className="p-6 cursor-pointer"
+              onClick={() => toggleCard('debts')}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">إجمالي الديون</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalDebts)}</p>
+                  <p className="text-xs text-gray-500 mt-1">الديون التي أنشأتها</p>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <div className="p-3 bg-red-100 rounded-lg">
+                    <CreditCard className="w-6 h-6 text-red-600" />
+                  </div>
+                  {expandedCard === 'debts' ? 
+                    <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  }
+                </div>
               </div>
             </div>
+            {expandedCard === 'debts' && (
+              <div className="border-t border-gray-200 p-4 max-h-64 overflow-y-auto">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">تفاصيل الديون حسب العميل:</h4>
+                <div className="space-y-2">
+                  {customersWithDebtAmounts.map(({ customer, amount }) => (
+                    <div 
+                      key={customer.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCustomerSelect(customer);
+                      }}
+                      className="flex items-center justify-between p-2 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 transition-colors"
+                    >
+                      <span className="text-sm font-medium text-gray-900">{customer.full_name}</span>
+                      <span className="text-sm text-red-600 font-semibold">{formatCurrency(amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">إجمالي المدفوعات</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalPayments)}</p>
-                <p className="text-xs text-gray-500 mt-1">المدفوعات المسجلة</p>
-              </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Banknote className="w-6 h-6 text-green-600" />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div 
+              className="p-6 cursor-pointer"
+              onClick={() => toggleCard('payments')}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">إجمالي المدفوعات</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalPayments)}</p>
+                  <p className="text-xs text-gray-500 mt-1">المدفوعات المسجلة</p>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <Banknote className="w-6 h-6 text-green-600" />
+                  </div>
+                  {expandedCard === 'payments' ? 
+                    <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  }
+                </div>
               </div>
             </div>
+            {expandedCard === 'payments' && (
+              <div className="border-t border-gray-200 p-4 max-h-64 overflow-y-auto">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">تفاصيل المدفوعات حسب العميل:</h4>
+                <div className="space-y-2">
+                  {customersWithPaymentAmounts.map(({ customer, amount }) => (
+                    <div 
+                      key={customer.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCustomerSelect(customer);
+                      }}
+                      className="flex items-center justify-between p-2 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
+                    >
+                      <span className="text-sm font-medium text-gray-900">{customer.full_name}</span>
+                      <span className="text-sm text-green-600 font-semibold">{formatCurrency(amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">المبلغ المستحق</p>
-                <p className={`text-2xl font-bold mt-1 ${outstanding > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                  {formatCurrency(outstanding)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">الرصيد المتبقي</p>
-              </div>
-              <div className={`p-3 rounded-lg ${outstanding > 0 ? 'bg-orange-100' : 'bg-green-100'}`}>
-                <TrendingUp className={`w-6 h-6 ${outstanding > 0 ? 'text-orange-600' : 'text-green-600'}`} />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div 
+              className="p-6 cursor-pointer"
+              onClick={() => toggleCard('outstanding')}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">المبلغ المستحق</p>
+                  <p className={`text-2xl font-bold mt-1 ${outstanding > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    {formatCurrency(outstanding)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">الرصيد المتبقي</p>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <div className={`p-3 rounded-lg ${outstanding > 0 ? 'bg-orange-100' : 'bg-green-100'}`}>
+                    <TrendingUp className={`w-6 h-6 ${outstanding > 0 ? 'text-orange-600' : 'text-green-600'}`} />
+                  </div>
+                  {expandedCard === 'outstanding' ? 
+                    <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  }
+                </div>
               </div>
             </div>
+            {expandedCard === 'outstanding' && (
+              <div className="border-t border-gray-200 p-4 max-h-64 overflow-y-auto">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">العملاء الذين لم يسددوا بعد:</h4>
+                <div className="space-y-2">
+                  {customersWithOutstandingAmounts.map(({ customer, amount }) => (
+                    <div 
+                      key={customer.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCustomerSelect(customer);
+                      }}
+                      className="flex items-center justify-between p-2 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors"
+                    >
+                      <span className="text-sm font-medium text-gray-900">{customer.full_name}</span>
+                      <span className="text-sm text-orange-600 font-semibold">{formatCurrency(amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
