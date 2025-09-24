@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { Sidebar } from './components/Sidebar';
 import { WorkerDashboard } from './components/WorkerDashboard';
+import { CustomersTab } from './components/CustomersTab';
 import { CustomerProfile } from './components/CustomerProfile';
 import { AddCustomerModal } from './components/AddCustomerModal';
 import { CustomerSelectionModal } from './components/CustomerSelectionModal';
@@ -11,7 +13,7 @@ import { mockWorkerData, mockCustomers } from './data/mockData';
 import { Customer, Debt, Payment } from './types';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'profile'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'customers' | 'profile'>('dashboard');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [showCustomerSelection, setShowCustomerSelection] = useState<'debt' | 'payment' | null>(null);
@@ -126,26 +128,20 @@ function App() {
     setPayments(payments.filter(payment => payment.id !== paymentId));
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {currentView === 'dashboard' ? (
-        <WorkerDashboard
-          workerData={mockWorkerData}
-          customers={customers}
-          debts={debts}
-          payments={payments}
-          onCustomerSelect={handleCustomerSelect}
-          onAddCustomer={() => setShowAddCustomer(true)}
-          onAddDebt={handleAddDebtRequest}
-          onRecordPayment={handleRecordPaymentRequest}
-        />
-      ) : (
+  const handleViewChange = (view: 'dashboard' | 'customers') => {
+    setCurrentView(view);
+    setSelectedCustomer(null);
+  };
+
+  const renderMainContent = () => {
+    if (currentView === 'profile' && selectedCustomer) {
+      return (
         <CustomerProfile
-          customer={selectedCustomer!}
-          debts={debts.filter(d => d.customer_id === selectedCustomer?.id)}
-          payments={payments.filter(p => p.customer_id === selectedCustomer?.id)}
+          customer={selectedCustomer}
+          debts={debts.filter(d => d.customer_id === selectedCustomer.id)}
+          payments={payments.filter(p => p.customer_id === selectedCustomer.id)}
           onBack={() => {
-            setCurrentView('dashboard');
+            setCurrentView('customers');
             setSelectedCustomer(null);
           }}
           onAddDebt={handleAddDebtRequest}
@@ -155,7 +151,47 @@ function App() {
           onUpdatePayment={(payment) => setShowEditPayment(payment)}
           onDeletePayment={handleDeletePayment}
         />
-      )}
+      );
+    }
+
+    if (currentView === 'customers') {
+      return (
+        <CustomersTab
+          workerData={mockWorkerData}
+          customers={customers}
+          debts={debts}
+          payments={payments}
+          onCustomerSelect={handleCustomerSelect}
+          onAddCustomer={() => setShowAddCustomer(true)}
+          onAddDebt={handleAddDebtRequest}
+          onRecordPayment={handleRecordPaymentRequest}
+        />
+      );
+    }
+
+    return (
+      <WorkerDashboard
+        workerData={mockWorkerData}
+        customers={customers}
+        debts={debts}
+        payments={payments}
+        onCustomerSelect={handleCustomerSelect}
+        onAddCustomer={() => setShowAddCustomer(true)}
+        onAddDebt={handleAddDebtRequest}
+        onRecordPayment={handleRecordPaymentRequest}
+      />
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar
+        currentView={currentView === 'profile' ? 'customers' : currentView}
+        onViewChange={handleViewChange}
+        currentUser={mockWorkerData.currentUser}
+      />
+      
+      {renderMainContent()}
 
       {showAddCustomer && (
         <AddCustomerModal
